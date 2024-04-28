@@ -13,20 +13,10 @@ function Test-CommandAvailable {
 function Write-InstallInfo {
     param(
         [Parameter(Mandatory = $True, Position = 0)]
-        [String] $String,
-        [Parameter(Mandatory = $False, Position = 1)]
-        [System.ConsoleColor] $ForegroundColor = $host.UI.RawUI.ForegroundColor
+        [String] $String
     )
 
-    $backup = $host.UI.RawUI.ForegroundColor
-
-    if ($ForegroundColor -ne $host.UI.RawUI.ForegroundColor) {
-        $host.UI.RawUI.ForegroundColor = $ForegroundColor
-    }
-
     Write-Output "`n$String`n"
-
-    $host.UI.RawUI.ForegroundColor = $backup
 }
 
 function Deny-Install {
@@ -55,7 +45,7 @@ function InstallDep {
     if (-Not (Test-CommandAvailable("scoop"))) {
         Write-InstallInfo "Installing scoop..."
 
-        Invoke-RestMethod -Uri "get.scoop.sh" | Invoke-Expression
+        Invoke-RestMethod -Uri "get.scoop.sh" | Invoke-Expression | Select-String -Pattern "successfully"
     }
 
     if ($bucket) {
@@ -108,7 +98,7 @@ function Prechecks {
 
 Prechecks
 
-pip install mov-cli
+Invoke-Expression "powershell -Command pip install mov-cli"
 
 Write-InstallInfo "mov-cli installed. >.<"
 
