@@ -1,6 +1,9 @@
-# Code used from https://raw.githubusercontent.com/scoopinstaller/install/master/install.ps1
+# Test-CommandAvailable, Write-InstallInfo, Deny-Install and Test-IsAdministrator are all from: https://raw.githubusercontent.com/scoopinstaller/install/master/install.ps1
 
-$IS_EXECUTED_FROM_IEX = ($null -eq $MyInvocation.MyCommand.Path)
+param(
+    [Parameter(Mandatory = $False, Position = 0)]
+    [Bool] $vlc = $False
+)
 
 function Test-CommandAvailable {
     param (
@@ -19,19 +22,41 @@ function Write-InstallInfo {
     Write-Output "`n$String`n"
 }
 
+function Test-IsAdministrator {
+    return ([Security.Principal.WindowsPrincipal]`
+            [Security.Principal.WindowsIdentity]::GetCurrent()`
+    ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
 function Deny-Install {
     param(
         [String] $message,
         [Int] $errorCode = 1
     )
 
-    Write-InstallInfo -String $message -ForegroundColor Red
+    Write-InstallInfo $message
 
-    if ($IS_EXECUTED_FROM_IEX) {
-        break
-    } else {
-        exit $errorCode
-    }
+    break
+}
+
+$manager = "scoop"
+
+if (Test-CommandAvailable("scoop")) {
+    $manager = "scoop"
+
+    Write-InstallInfo "Using scoop"
+}
+elseif (Test-CommandAvailable("choco")) {
+    $manager = "choco"
+
+    Write-InstallInfo "Using choco"
+}
+else {
+    Invoke-RestMethod -Uri "get.scoop.sh" | Invoke-Expression | Out-Null
+
+    $manager = "scoop"
+
+    Write-InstallInfo "Installed scoop"
 }
 
 function InstallDep {
@@ -42,25 +67,28 @@ function InstallDep {
         [String] $bucket = $null
     )
 
-    if (-Not (Test-CommandAvailable("scoop"))) {
-        Write-InstallInfo "Installing scoop..."
-
-        Invoke-RestMethod -Uri "get.scoop.sh" | Invoke-Expression | Select-String -Pattern "successfully"
-    }
-
-    if ($bucket) {
+    if ($bucket -and $manager -eq "scoop") {
         if (-Not (Test-CommandAvailable("git"))) {
-            Write-InstallInfo "Installing git..."
-
             scoop install git
+
+            Write-InstallInfo "Installed git for $bucket"
         }
 
         scoop bucket add $bucket
     }
 
-    Write-InstallInfo "Installing $dep..."
+    if ($manager -eq "scoop") {
+        Invoke-Expression "$manager install $dep"
+    } else {
+        if (Test-IsAdministrator) {
+            Invoke-Expression "$manager install $dep -y"
+        }
+        else {
+            start-process powershell -Verb "runas" -ArgumentList "-noexit -command 'Invoke-Expression '$manager install $dep -y'"
+        }
+    }
 
-    scoop install $dep
+    Write-InstallInfo "Installed $dep"
 }
 
 
@@ -87,7 +115,10 @@ function Prechecks {
         }
     }
     
-    if (-Not (Test-CommandAvailable("mpv"))) {
+    if (-Not (Test-CommandAvailable("vlc")) -and $vlc -eq $true) {
+        InstallDep "vlc" "extras"
+    } 
+    elseif (-Not (Test-CommandAvailable("mpv")) -and $vlc -eq $false) {
         InstallDep "mpv" "extras"
     }
     
@@ -98,12 +129,11 @@ function Prechecks {
 
 Prechecks
 
+if ($manager -eq "choco") {
+    Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+    refreshenv
+}
+
 pip install mov-cli
 
 Write-InstallInfo "mov-cli installed. >.<"
-
-$Test = Read-Host -Prompt "Test it? (y/n)"
-
-if ($Test.ToLower() -eq "y") {
-    mov-cli -s test abc
-}
