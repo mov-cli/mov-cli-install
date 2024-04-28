@@ -25,10 +25,3 @@ Save the [install.ps1](https://raw.githubusercontent.com/mov-cli/mov-cli-install
 ```powershell
 .\install.ps1
 ```
-
-### What it does?:
-
-This script automates the installation process for mov-cli by performing the following tasks:
-
-- Downloads scoop package manager.
-- Installs dependencies like python, fzf, git, and mpv for mov-cli.
