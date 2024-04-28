@@ -98,7 +98,7 @@ function Prechecks {
 
 Prechecks
 
-Invoke-Expression "powershell -Command pip install mov-cli"
+pip install mov-cli
 
 Write-InstallInfo "mov-cli installed. >.<"
 
