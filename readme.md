@@ -1,6 +1,6 @@
 <div align="center">
 
-  ## mov-cli-test
+  ## mov-cli-install
   <sub>Think of it as arch-install, but for mov-cli</sub>
 
 </div>
