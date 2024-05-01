@@ -17,7 +17,7 @@ Now, there are two ways to install mov-cli:
 
 - **One-Line Command:**
 ```powershell
-iem https://raw.githubusercontent.com/mov-cli/mov-cli-install/v1/install.ps1 | irm
+irm https://raw.githubusercontent.com/mov-cli/mov-cli-install/v1/install.ps1 | iex 
 ```
 
 - **Manual Installation:**
